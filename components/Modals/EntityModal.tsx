@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { FloorEntity, EntityStatus, EntityType, Product, OrderItem, OrderStatus, Order, KTVRoomSession } from '../../types';
-import { X, ShoppingBag, CreditCard, Play, Square, Plus, Minus, Trash2, Sparkles, Loader2, Clock, PlusCircle, CheckCircle2, ReceiptText } from 'lucide-react';
-import { getSmartSuggestions } from '../../services/geminiService';
+import { FloorEntity, EntityStatus, EntityType, Product, OrderItem, OrderStatus, Order, KTVRoomSession, RoomFeatures } from '../../types';
+// Fixed: Added missing 'Music' icon to the lucide-react import
+import { X, ShoppingBag, CreditCard, Play, Square, Plus, Minus, Trash2, Sparkles, Loader2, Clock, PlusCircle, CheckCircle2, ReceiptText, Volume2, Settings2, SlidersHorizontal, Music } from 'lucide-react';
+import { getSmartSuggestions, speakAnnouncement } from '../../services/geminiService';
 import { VAT_RATE, SERVICE_CHARGE_RATE } from '../../constants';
 
 interface EntityModalProps {
@@ -21,13 +22,14 @@ const EntityModal: React.FC<EntityModalProps> = ({
   entity, products, currentOrder, currentSession, onClose, 
   onUpdateEntity, onUpdateOrder, onStartSession, onEndSession 
 }) => {
-  const [activeTab, setActiveTab] = useState<'order' | 'billing' | 'session'>('order');
+  const [activeTab, setActiveTab] = useState<'order' | 'billing' | 'session' | 'features'>('order');
   const [localItems, setLocalItems] = useState<OrderItem[]>(currentOrder?.items || []);
   const [suggestions, setSuggestions] = useState<{name: string, reason: string}[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [checkoutStep, setCheckoutStep] = useState<'review' | 'success'>('review');
   const [sessionTime, setSessionTime] = useState<string>('00:00:00');
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
@@ -56,6 +58,19 @@ const EntityModal: React.FC<EntityModalProps> = ({
     const result = await getSmartSuggestions(localItems, products, entity.type);
     setSuggestions(result);
     setLoadingSuggestions(false);
+  };
+
+  const handleSpeak = async () => {
+    setIsSpeaking(true);
+    let message = `${entity.name} is currently ${entity.status}.`;
+    if (currentSession) {
+      message += ` The session has been active for ${Math.floor((Date.now() - currentSession.startTime) / 60000)} minutes.`;
+    }
+    if (localItems.length > 0) {
+      message += ` Total items ordered: ${localItems.reduce((acc, i) => acc + i.quantity, 0)}.`;
+    }
+    await speakAnnouncement(message);
+    setIsSpeaking(false);
   };
 
   const addItem = (product: Product) => {
@@ -117,6 +132,11 @@ const EntityModal: React.FC<EntityModalProps> = ({
     onUpdateEntity(entity.id, { status: EntityStatus.CLEANING, currentOrderId: undefined, currentSessionId: undefined });
   };
 
+  const updateFeature = (key: keyof RoomFeatures, value: string) => {
+    const currentFeatures = entity.features || { karaokeMachine: 'Standard', soundSystem: 'Stereo', lighting: 'Standard' };
+    onUpdateEntity(entity.id, { features: { ...currentFeatures, [key]: value } });
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl transition-all">
@@ -130,7 +150,17 @@ const EntityModal: React.FC<EntityModalProps> = ({
               <Clock size={16}/> {sessionTime}
             </div>}
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={24}/></button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleSpeak} 
+              disabled={isSpeaking}
+              className={`p-2 rounded-full transition-colors flex items-center gap-2 px-4 font-bold text-sm ${isSpeaking ? 'bg-indigo-100 text-indigo-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+            >
+              <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
+              {isSpeaking ? 'Speaking...' : 'Status Report'}
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={24}/></button>
+          </div>
         </div>
 
         <div className="flex-1 flex overflow-hidden">
@@ -138,7 +168,10 @@ const EntityModal: React.FC<EntityModalProps> = ({
           <div className="w-20 border-r bg-slate-50 flex flex-col items-center py-6 gap-6">
             <button onClick={() => { setActiveTab('order'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'order' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><Plus size={24}/></button>
             {entity.type === EntityType.KTV_ROOM && (
-              <button onClick={() => { setActiveTab('session'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'session' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><Clock size={24}/></button>
+              <>
+                <button onClick={() => { setActiveTab('session'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'session' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><Clock size={24}/></button>
+                <button onClick={() => { setActiveTab('features'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'features' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><SlidersHorizontal size={24}/></button>
+              </>
             )}
             <button onClick={() => { setActiveTab('billing'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'billing' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><CreditCard size={24}/></button>
           </div>
@@ -149,7 +182,7 @@ const EntityModal: React.FC<EntityModalProps> = ({
                 <div className="flex-1 p-6 overflow-y-auto bg-gray-50/50">
                   <div className="mb-8">
                     <div className="flex justify-between items-center mb-4">
-                       <h3 className="text-lg font-bold flex items-center gap-2"><Sparkles className="text-amber-500" size={20}/> Smart Suggestions</h3>
+                       <h3 className="text-lg font-bold flex items-center gap-2"><Sparkles className="text-amber-500" size={20}/> Smart Suggestions (Fast AI)</h3>
                        <button onClick={fetchSuggestions} className="text-xs font-bold text-indigo-600 hover:underline">Refresh</button>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
@@ -303,6 +336,67 @@ const EntityModal: React.FC<EntityModalProps> = ({
               </div>
             )}
 
+            {activeTab === 'features' && (
+              <div className="flex-1 p-12 overflow-y-auto bg-gray-50/30">
+                <div className="max-w-2xl mx-auto space-y-8">
+                  <div className="border-b pb-4 flex items-center gap-3">
+                    <Settings2 className="text-indigo-600" size={32} />
+                    <div>
+                      <h3 className="text-3xl font-black text-slate-900">Room Features</h3>
+                      <p className="text-slate-500 font-medium">Configure hardware and ambiance for this VIP room.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6">
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Karaoke Machine Quality</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {['Standard', 'Premium', 'Platinum'].map((v) => (
+                          <button 
+                            key={v}
+                            onClick={() => updateFeature('karaokeMachine', v)}
+                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.karaokeMachine === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Sound System Type</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {['Stereo', 'Surround 5.1', 'Hi-Fi Pro'].map((v) => (
+                          <button 
+                            key={v}
+                            onClick={() => updateFeature('soundSystem', v)}
+                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.soundSystem === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Lighting Options</label>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {['Standard', 'Disco', 'Mood', 'Custom RGB'].map((v) => (
+                          <button 
+                            key={v}
+                            onClick={() => updateFeature('lighting', v)}
+                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.lighting === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'billing' && (
               <div className="flex-1 flex bg-gray-50/30 overflow-hidden">
                 {checkoutStep === 'review' ? (
@@ -394,5 +488,4 @@ const EntityModal: React.FC<EntityModalProps> = ({
   );
 };
 
-import { Music } from 'lucide-react';
 export default EntityModal;

@@ -20,8 +20,20 @@ export const INITIAL_ENTITIES: FloorEntity[] = [
   { id: 't2', name: 'Table 2', type: EntityType.TABLE, status: EntityStatus.AVAILABLE, capacity: 4 },
   { id: 't3', name: 'Table 3', type: EntityType.TABLE, status: EntityStatus.AVAILABLE, capacity: 2 },
   { id: 't4', name: 'Table 4', type: EntityType.TABLE, status: EntityStatus.AVAILABLE, capacity: 6 },
-  { id: 'r1', name: 'VIP Room 1', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 10, hourlyRate: 1500 },
-  { id: 'r2', name: 'VIP Room 2', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 15, hourlyRate: 2000 },
-  { id: 'r3', name: 'Deluxe Room A', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 8, hourlyRate: 1000 },
-  { id: 'r4', name: 'Deluxe Room B', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 8, hourlyRate: 1000 },
+  { 
+    id: 'r1', name: 'VIP Room 1', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 10, hourlyRate: 1500,
+    features: { karaokeMachine: 'Platinum', soundSystem: 'Hi-Fi Pro', lighting: 'Custom RGB' }
+  },
+  { 
+    id: 'r2', name: 'VIP Room 2', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 15, hourlyRate: 2000,
+    features: { karaokeMachine: 'Platinum', soundSystem: 'Surround 5.1', lighting: 'Disco' }
+  },
+  { 
+    id: 'r3', name: 'Deluxe Room A', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 8, hourlyRate: 1000,
+    features: { karaokeMachine: 'Premium', soundSystem: 'Surround 5.1', lighting: 'Mood' }
+  },
+  { 
+    id: 'r4', name: 'Deluxe Room B', type: EntityType.KTV_ROOM, status: EntityStatus.AVAILABLE, capacity: 8, hourlyRate: 1000,
+    features: { karaokeMachine: 'Premium', soundSystem: 'Stereo', lighting: 'Standard' }
+  },
 ];

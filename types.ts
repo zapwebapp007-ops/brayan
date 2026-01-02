@@ -27,6 +27,12 @@ export enum UserRole {
   WAITER = 'WAITER'
 }
 
+export interface RoomFeatures {
+  karaokeMachine: 'Standard' | 'Premium' | 'Platinum';
+  soundSystem: 'Stereo' | 'Surround 5.1' | 'Hi-Fi Pro';
+  lighting: 'Standard' | 'Disco' | 'Mood' | 'Custom RGB';
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -71,6 +77,11 @@ export interface FloorEntity {
   hourlyRate?: number;
   currentSessionId?: string;
   currentOrderId?: string;
+  /**
+   * hardware and ambiance configurations for KTV rooms.
+   * Persisted in the global state and localStorage.
+   */
+  features?: RoomFeatures;
 }
 
 export interface AuditLog {

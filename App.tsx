@@ -47,11 +47,27 @@ const App: React.FC = () => {
     addAuditLog('ROLE_CHANGE', `Switched role to ${role}`);
   };
 
-  const updateEntity = (id: string, updates: Partial<FloorEntity>) => {
+  /**
+   * Main updater function for entities (tables/rooms).
+   * Renamed from updateEntity to handleUpdateEntity as requested.
+   * Correctly merges features and persists to state, which triggers localStorage sync.
+   */
+  const handleUpdateEntity = (id: string, updates: Partial<FloorEntity>) => {
+    const targetEntity = state.entities.find(e => e.id === id);
+    if (!targetEntity) return;
+
     setState(prev => ({
       ...prev,
       entities: prev.entities.map(e => e.id === id ? { ...e, ...updates } : e)
     }));
+
+    // Log persistence of hardware features if they were updated
+    if (updates.features) {
+      addAuditLog('PERSIST_FEATURES', `Updated room features for ${targetEntity.name}`);
+    }
+    if (updates.status && updates.status !== targetEntity.status) {
+      addAuditLog('STATUS_SYNC', `${targetEntity.name} changed status to ${updates.status}`);
+    }
   };
 
   const handleUpdateOrder = (entityId: string, items: OrderItem[]) => {
@@ -70,7 +86,7 @@ const App: React.FC = () => {
         createdAt: Date.now(),
         status: 'OPEN'
       });
-      updateEntity(entityId, { currentOrderId: newOrderId, status: EntityStatus.OCCUPIED });
+      handleUpdateEntity(entityId, { currentOrderId: newOrderId, status: EntityStatus.OCCUPIED });
       addAuditLog('NEW_ORDER', `Created order for ${entity.name}`);
     } else {
       newOrders = newOrders.map(o => o.id === newOrderId ? { ...o, items } : o);
@@ -97,16 +113,15 @@ const App: React.FC = () => {
       ...prev,
       sessions: [...prev.sessions, newSession]
     }));
-    updateEntity(entityId, { currentSessionId: sessionId, status: EntityStatus.OCCUPIED });
+    handleUpdateEntity(entityId, { currentSessionId: sessionId, status: EntityStatus.OCCUPIED });
     addAuditLog('START_SESSION', `Started KTV session for ${entity.name}`);
   };
 
   const handleEndSession = (entityId: string) => {
-    updateEntity(entityId, { status: EntityStatus.CLEANING });
+    handleUpdateEntity(entityId, { status: EntityStatus.CLEANING });
     addAuditLog('END_SESSION', `Ended KTV session for room ${entityId}`);
   };
 
-  // Fixed typo: replaced undefined 'newProductProductCat' with correct 'newProductCat'
   const handleProductAdd = () => {
     if (!newProductName || !newProductPrice) return;
     const newProduct: Product = {
@@ -369,7 +384,7 @@ const App: React.FC = () => {
           currentOrder={state.orders.find(o => o.id === selectedEntity.currentOrderId)}
           currentSession={state.sessions.find(s => s.id === selectedEntity.currentSessionId)}
           onClose={() => setSelectedEntity(null)}
-          onUpdateEntity={updateEntity}
+          onUpdateEntity={handleUpdateEntity}
           onUpdateOrder={handleUpdateOrder}
           onStartSession={handleStartSession}
           onEndSession={handleEndSession}
