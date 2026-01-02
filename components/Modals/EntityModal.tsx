@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { FloorEntity, EntityStatus, EntityType, Product, OrderItem, OrderStatus, Order, KTVRoomSession, RoomFeatures } from '../../types';
-// Fixed: Added missing 'Music' icon to the lucide-react import
 import { X, ShoppingBag, CreditCard, Play, Square, Plus, Minus, Trash2, Sparkles, Loader2, Clock, PlusCircle, CheckCircle2, ReceiptText, Volume2, Settings2, SlidersHorizontal, Music } from 'lucide-react';
 import { getSmartSuggestions, speakAnnouncement } from '../../services/geminiService';
 import { VAT_RATE, SERVICE_CHARGE_RATE } from '../../constants';
@@ -64,7 +63,7 @@ const EntityModal: React.FC<EntityModalProps> = ({
     setIsSpeaking(true);
     let message = `${entity.name} is currently ${entity.status}.`;
     if (currentSession) {
-      message += ` The session has been active for ${Math.floor((Date.now() - currentSession.startTime) / 60000)} minutes.`;
+      message += ` The session has been active for ${Math.floor((Date.now() - currentSession.startTime) / 3600000)} hours.`;
     }
     if (localItems.length > 0) {
       message += ` Total items ordered: ${localItems.reduce((acc, i) => acc + i.quantity, 0)}.`;
@@ -138,77 +137,91 @@ const EntityModal: React.FC<EntityModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-6xl h-[90vh] rounded-3xl overflow-hidden flex flex-col shadow-2xl transition-all">
-        <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold">{entity.name}</h2>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center lg:p-4 overflow-hidden">
+      <div className="bg-white w-full h-full lg:max-w-6xl lg:h-[90vh] lg:rounded-3xl overflow-hidden flex flex-col shadow-2xl transition-all relative">
+        <div className="p-4 lg:p-6 border-b flex justify-between items-center bg-slate-50 shrink-0">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <h2 className="text-lg lg:text-2xl font-black truncate max-w-[120px] sm:max-w-none">{entity.name}</h2>
+            <span className={`px-2 py-0.5 lg:px-3 lg:py-1 rounded-full text-[9px] lg:text-xs font-black uppercase ${
               entity.status === EntityStatus.AVAILABLE ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
             }`}>{entity.status}</span>
-            {currentSession && <div className="flex items-center gap-1.5 ml-4 text-indigo-600 font-mono font-bold bg-indigo-50 px-3 py-1 rounded-lg">
-              <Clock size={16}/> {sessionTime}
+            {currentSession && <div className="flex items-center gap-1.5 ml-2 text-indigo-600 font-mono font-black bg-indigo-50 px-2 py-0.5 rounded-lg text-xs lg:text-sm">
+              <Clock size={14}/> {sessionTime}
             </div>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 lg:gap-2">
             <button 
               onClick={handleSpeak} 
               disabled={isSpeaking}
-              className={`p-2 rounded-full transition-colors flex items-center gap-2 px-4 font-bold text-sm ${isSpeaking ? 'bg-indigo-100 text-indigo-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+              className={`p-1.5 lg:p-2 rounded-full transition-colors flex items-center gap-1 lg:gap-2 px-3 lg:px-4 font-black text-[10px] lg:text-sm ${isSpeaking ? 'bg-indigo-100 text-indigo-400' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
             >
-              <Volume2 size={20} className={isSpeaking ? 'animate-pulse' : ''} />
-              {isSpeaking ? 'Speaking...' : 'Status Report'}
+              <Volume2 size={16} lg:size={20} className={isSpeaking ? 'animate-pulse' : ''} />
+              <span className="hidden sm:inline">{isSpeaking ? 'Speaking...' : 'Status Report'}</span>
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={24}/></button>
+            <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={20} lg:size={24}/></button>
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden">
-          {/* Navigation */}
-          <div className="w-20 border-r bg-slate-50 flex flex-col items-center py-6 gap-6">
-            <button onClick={() => { setActiveTab('order'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'order' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><Plus size={24}/></button>
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          {/* Internal Navigation: Horizontal on Mobile, Vertical on Desktop */}
+          <div className="flex lg:flex-col w-full lg:w-20 border-b lg:border-r bg-slate-50 p-2 lg:py-6 gap-2 lg:gap-6 justify-around lg:justify-start shrink-0">
+            <button onClick={() => { setActiveTab('order'); setCheckoutStep('review'); }} className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl transition-all shadow-sm flex flex-col items-center gap-1 lg:gap-0 ${activeTab === 'order' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}>
+              <Plus size={20} lg:size={24}/>
+              <span className="text-[8px] lg:hidden font-black">ORDER</span>
+            </button>
             {entity.type === EntityType.KTV_ROOM && (
               <>
-                <button onClick={() => { setActiveTab('session'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'session' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><Clock size={24}/></button>
-                <button onClick={() => { setActiveTab('features'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'features' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><SlidersHorizontal size={24}/></button>
+                <button onClick={() => { setActiveTab('session'); setCheckoutStep('review'); }} className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl transition-all shadow-sm flex flex-col items-center gap-1 lg:gap-0 ${activeTab === 'session' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}>
+                  <Clock size={20} lg:size={24}/>
+                  <span className="text-[8px] lg:hidden font-black">TIME</span>
+                </button>
+                <button onClick={() => { setActiveTab('features'); setCheckoutStep('review'); }} className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl transition-all shadow-sm flex flex-col items-center gap-1 lg:gap-0 ${activeTab === 'features' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}>
+                  <SlidersHorizontal size={20} lg:size={24}/>
+                  <span className="text-[8px] lg:hidden font-black">SETUP</span>
+                </button>
               </>
             )}
-            <button onClick={() => { setActiveTab('billing'); setCheckoutStep('review'); }} className={`p-4 rounded-2xl transition-all shadow-sm ${activeTab === 'billing' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}><CreditCard size={24}/></button>
+            <button onClick={() => { setActiveTab('billing'); setCheckoutStep('review'); }} className={`p-3 lg:p-4 rounded-xl lg:rounded-2xl transition-all shadow-sm flex flex-col items-center gap-1 lg:gap-0 ${activeTab === 'billing' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 bg-white'}`}>
+              <CreditCard size={20} lg:size={24}/>
+              <span className="text-[8px] lg:hidden font-black">BILL</span>
+            </button>
           </div>
 
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
             {activeTab === 'order' && (
               <>
-                <div className="flex-1 p-6 overflow-y-auto bg-gray-50/50">
-                  <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                       <h3 className="text-lg font-bold flex items-center gap-2"><Sparkles className="text-amber-500" size={20}/> Smart Suggestions (Fast AI)</h3>
-                       <button onClick={fetchSuggestions} className="text-xs font-bold text-indigo-600 hover:underline">Refresh</button>
+                <div className="flex-1 p-4 lg:p-6 overflow-y-auto bg-gray-50/50">
+                  {/* Suggestions Carousel for Mobile */}
+                  <div className="mb-6 lg:mb-8">
+                    <div className="flex justify-between items-center mb-3 lg:mb-4 px-1">
+                       <h3 className="text-sm lg:text-lg font-black flex items-center gap-2 uppercase tracking-tight"><Sparkles className="text-amber-500" size={16} lg:size={20}/> AI Upsell</h3>
+                       <button onClick={fetchSuggestions} className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full uppercase">Refresh</button>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="flex lg:grid lg:grid-cols-3 gap-3 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
                       {loadingSuggestions ? (
-                        Array(3).fill(0).map((_, i) => <div key={i} className="h-28 bg-white border animate-pulse rounded-2xl"></div>)
+                        Array(3).fill(0).map((_, i) => <div key={i} className="min-w-[140px] h-24 lg:h-28 bg-white border animate-pulse rounded-xl lg:rounded-2xl shrink-0"></div>)
                       ) : suggestions.length > 0 ? suggestions.map((s, idx) => {
                         const product = products.find(p => p.name === s.name);
                         return (
-                          <div key={idx} className="p-4 bg-white border border-amber-200 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                            <h4 className="font-bold text-slate-800 text-sm">{s.name}</h4>
-                            <p className="text-[10px] text-slate-500 mt-1 line-clamp-2 leading-tight">{s.reason}</p>
+                          <div key={idx} className="min-w-[140px] lg:min-w-0 p-3 lg:p-4 bg-white border border-amber-200 rounded-xl lg:rounded-2xl shadow-sm hover:shadow-md transition-shadow shrink-0">
+                            <h4 className="font-bold text-slate-800 text-[10px] lg:text-sm truncate">{s.name}</h4>
+                            <p className="text-[8px] lg:text-[10px] text-slate-500 mt-0.5 lg:mt-1 line-clamp-1 lg:line-clamp-2 leading-tight">{s.reason}</p>
                             {product && (
-                              <button onClick={() => addItem(product)} className="mt-3 w-full py-2 bg-amber-500 text-white rounded-xl text-[10px] font-bold hover:bg-amber-600 transition-colors">Add ₱{product.price}</button>
+                              <button onClick={() => addItem(product)} className="mt-2 lg:mt-3 w-full py-1.5 lg:py-2 bg-amber-500 text-white rounded-lg lg:rounded-xl text-[9px] lg:text-[10px] font-black hover:bg-amber-600 transition-colors uppercase">Add ₱{product.price}</button>
                             )}
                           </div>
                         );
-                      }) : <div className="col-span-3 text-center py-6 text-slate-400 text-sm">No suggestions available</div>}
+                      }) : <div className="w-full text-center py-6 text-slate-400 text-xs font-bold uppercase tracking-widest">No suggestions</div>}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+                  {/* Product Category Tabs */}
+                  <div className="flex items-center gap-2 mb-4 lg:mb-6 overflow-x-auto pb-2 -mx-1 px-1">
                     {categories.map(cat => (
                       <button 
                         key={cat} 
                         onClick={() => setSelectedCategory(cat)}
-                        className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                        className={`px-4 py-2 lg:px-4 lg:py-2 rounded-xl lg:rounded-full text-[10px] lg:text-sm font-black whitespace-nowrap transition-all uppercase tracking-tight ${
                           selectedCategory === cat ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-600 border hover:bg-slate-50'
                         }`}
                       >
@@ -217,69 +230,68 @@ const EntityModal: React.FC<EntityModalProps> = ({
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 lg:gap-4">
                     {filteredProducts.map(p => (
-                      <button key={p.id} onClick={() => addItem(p)} className="p-4 bg-white border border-slate-200 rounded-2xl hover:border-indigo-500 hover:shadow-lg transition-all text-left flex flex-col justify-between group shadow-sm">
+                      <button key={p.id} onClick={() => addItem(p)} className="p-3 lg:p-4 bg-white border border-slate-200 rounded-xl lg:rounded-2xl hover:border-indigo-500 hover:shadow-lg transition-all text-left flex flex-col justify-between group shadow-sm min-h-[90px] lg:min-h-[120px]">
                         <div>
-                          <p className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{p.name}</p>
-                          <p className="text-xs text-slate-500 mt-1">{p.description}</p>
+                          <p className="font-bold text-slate-800 text-[11px] lg:text-base group-hover:text-indigo-600 transition-colors line-clamp-1">{p.name}</p>
+                          <p className="text-[9px] lg:text-xs text-slate-500 mt-0.5 lg:mt-1 line-clamp-2 leading-tight hidden sm:block">{p.description}</p>
                         </div>
-                        <p className="mt-4 font-black text-slate-900">₱{p.price}</p>
+                        <p className="mt-2 lg:mt-4 font-black text-slate-900 text-[12px] lg:text-lg">₱{p.price}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="w-80 border-l bg-white flex flex-col shadow-xl">
-                  <div className="p-6 border-b">
-                    <h3 className="font-bold flex items-center gap-2 text-lg"><ShoppingBag size={20}/> Current Order</h3>
+                {/* Mobile Cart View: Expandable or Split */}
+                <div className="h-48 lg:h-auto lg:w-80 border-t lg:border-t-0 lg:border-l bg-white flex flex-col shadow-2xl z-10">
+                  <div className="p-3 lg:p-6 border-b flex justify-between items-center bg-slate-50 lg:bg-white">
+                    <h3 className="font-black flex items-center gap-2 text-xs lg:text-lg uppercase tracking-tight"><ShoppingBag size={14} lg:size={20}/> Cart ({localItems.length})</h3>
+                    <button className="lg:hidden text-[10px] font-black text-indigo-600" onClick={() => setActiveTab('billing')}>Review Bill</button>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <div className="flex-1 overflow-y-auto p-2 lg:p-4 space-y-2">
                     {localItems.length === 0 && (
                       <div className="h-full flex flex-col items-center justify-center opacity-30">
-                        <ShoppingBag size={48}/>
-                        <p className="mt-4 font-medium">Cart is empty</p>
+                        <ShoppingBag size={32} lg:size={48}/>
+                        <p className="mt-2 text-[10px] lg:text-sm font-black uppercase">Empty</p>
                       </div>
                     )}
                     {localItems.map(item => (
-                      <div key={item.id} className={`p-4 rounded-2xl border flex justify-between items-center transition-all ${
+                      <div key={item.id} className={`p-2 lg:p-4 rounded-xl lg:rounded-2xl border flex justify-between items-center transition-all ${
                         item.status === OrderStatus.DRAFT ? 'bg-indigo-50/50 border-indigo-100' : 'bg-white'
                       }`}>
-                        <div className="flex-1 mr-2">
-                          <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-slate-500">₱{item.price}</span>
-                            {item.status !== OrderStatus.DRAFT && (
-                              <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold uppercase tracking-tighter">{item.status}</span>
-                            )}
+                        <div className="flex-1 mr-2 overflow-hidden">
+                          <p className="text-[10px] lg:text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[9px] lg:text-[10px] text-slate-500">₱{item.price}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 lg:gap-2">
                           {item.status === OrderStatus.DRAFT ? (
                             <>
-                              <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:bg-slate-200 rounded text-slate-400"><Minus size={14}/></button>
-                              <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
-                              <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:bg-slate-200 rounded text-slate-400"><Plus size={14}/></button>
-                              <button onClick={() => removeItem(item.id)} className="ml-1 text-rose-500 hover:text-rose-700"><Trash2 size={16}/></button>
+                              <button onClick={() => updateQuantity(item.id, -1)} className="p-1 lg:p-1.5 hover:bg-slate-200 rounded-lg text-slate-400"><Minus size={12} lg:size={14}/></button>
+                              <span className="text-[11px] lg:text-sm font-black w-4 text-center">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.id, 1)} className="p-1 lg:p-1.5 hover:bg-slate-200 rounded-lg text-slate-400"><Plus size={12} lg:size={14}/></button>
+                              <button onClick={() => removeItem(item.id)} className="ml-1 text-rose-500 hover:text-rose-700 p-1"><Trash2 size={14} lg:size={16}/></button>
                             </>
                           ) : (
-                            <span className="font-bold text-slate-400 text-sm">x{item.quantity}</span>
+                            <span className="font-black text-slate-400 text-[10px] lg:text-sm uppercase bg-slate-100 px-1.5 py-0.5 rounded-lg">x{item.quantity}</span>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div className="p-6 bg-slate-50 border-t space-y-4">
+                  <div className="p-3 lg:p-6 bg-slate-50 border-t space-y-2 lg:space-y-4 shrink-0">
                     <div className="flex justify-between items-end">
-                      <span className="text-slate-500 text-sm font-medium">Total Items</span>
-                      <span className="text-xl font-black text-slate-900">₱{calculateSubtotal().toLocaleString()}</span>
+                      <span className="text-slate-500 text-[10px] lg:text-sm font-black uppercase tracking-widest">Subtotal</span>
+                      <span className="text-lg lg:text-xl font-black text-slate-900">₱{calculateSubtotal().toLocaleString()}</span>
                     </div>
                     <button 
                       disabled={!localItems.some(i => i.status === OrderStatus.DRAFT)}
                       onClick={sendOrder}
-                      className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 disabled:bg-slate-300 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 lg:py-4 bg-indigo-600 text-white rounded-xl lg:rounded-2xl font-black text-xs lg:text-sm uppercase tracking-widest hover:bg-indigo-700 disabled:bg-slate-300 shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
                     >
-                      <CheckCircle2 size={20}/> Send to Kitchen
+                      <CheckCircle2 size={16}/> Send Order
                     </button>
                   </div>
                 </div>
@@ -287,49 +299,49 @@ const EntityModal: React.FC<EntityModalProps> = ({
             )}
 
             {activeTab === 'session' && (
-              <div className="flex-1 p-12 flex flex-col items-center justify-center text-center bg-gray-50/30">
-                <div className={`w-40 h-40 rounded-full flex items-center justify-center mb-8 shadow-2xl transition-all duration-500 ${
+              <div className="flex-1 p-6 lg:p-12 flex flex-col items-center justify-center text-center bg-gray-50/30">
+                <div className={`w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center mb-6 lg:mb-8 shadow-2xl transition-all duration-500 ${
                   currentSession ? 'bg-indigo-600 text-white animate-pulse' : 'bg-slate-100 text-slate-400'
                 }`}>
-                  <Music className={currentSession ? 'animate-bounce' : ''} size={80}/>
+                  <Music className={currentSession ? 'animate-bounce' : ''} size={48} lg:size={80}/>
                 </div>
                 {currentSession ? (
-                  <div className="space-y-8 max-w-sm">
+                  <div className="space-y-6 lg:space-y-8 max-w-sm w-full">
                     <div>
-                      <h3 className="text-4xl font-black text-slate-900 tracking-tight">VIP Session Active</h3>
-                      <p className="text-slate-500 mt-2 font-medium">Started at {new Date(currentSession.startTime).toLocaleTimeString()}</p>
+                      <h3 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight uppercase">VIP Active</h3>
+                      <p className="text-slate-500 mt-1 lg:mt-2 text-xs lg:text-sm font-bold uppercase tracking-widest">Since {new Date(currentSession.startTime).toLocaleTimeString()}</p>
                     </div>
-                    <div className="text-6xl font-mono font-black text-indigo-600 bg-white py-10 px-6 rounded-3xl shadow-sm border border-indigo-100">
+                    <div className="text-4xl lg:text-6xl font-mono font-black text-indigo-600 bg-white py-6 lg:py-10 px-4 lg:px-6 rounded-2xl lg:rounded-3xl shadow-sm border border-indigo-100">
                        {sessionTime}
                     </div>
                     <button 
                       onClick={() => onEndSession(entity.id)}
-                      className="w-full py-5 bg-rose-500 text-white rounded-2xl font-bold hover:bg-rose-600 shadow-lg shadow-rose-100 transition-all flex items-center justify-center gap-3"
+                      className="w-full py-4 lg:py-5 bg-rose-500 text-white rounded-xl lg:rounded-2xl font-black text-sm lg:text-base uppercase tracking-widest hover:bg-rose-600 shadow-lg shadow-rose-100 transition-all flex items-center justify-center gap-3"
                     >
-                      <Square size={24} fill="currentColor"/> Stop & Start Cleaning
+                      <Square size={20} lg:size={24} fill="currentColor"/> Stop Session
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-8 max-w-sm">
+                  <div className="space-y-6 lg:space-y-8 max-w-sm w-full">
                      <div>
-                      <h3 className="text-4xl font-black text-slate-900 tracking-tight">KTV Room Ready</h3>
-                      <p className="text-slate-500 mt-2 font-medium">Rates apply from the moment the timer starts.</p>
+                      <h3 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight uppercase">Room Ready</h3>
+                      <p className="text-slate-500 mt-1 lg:mt-2 text-[10px] lg:text-sm font-black uppercase tracking-tighter">Hourly billing starts immediately</p>
                     </div>
-                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                       <div className="flex justify-between font-bold">
+                    <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-3xl border shadow-sm space-y-3 lg:space-y-4">
+                       <div className="flex justify-between font-black text-[10px] lg:text-sm uppercase">
                           <span className="text-slate-500">Hourly Rate</span>
-                          <span className="text-slate-900">₱{entity.hourlyRate} / hr</span>
+                          <span className="text-slate-900">₱{entity.hourlyRate}</span>
                        </div>
-                       <div className="flex justify-between font-bold">
+                       <div className="flex justify-between font-black text-[10px] lg:text-sm uppercase">
                           <span className="text-slate-500">Grace Period</span>
-                          <span className="text-slate-900">10 Minutes</span>
+                          <span className="text-slate-900">10m</span>
                        </div>
                     </div>
                     <button 
                       onClick={() => onStartSession(entity.id)}
-                      className="w-full py-5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-3"
+                      className="w-full py-4 lg:py-5 bg-emerald-500 text-white rounded-xl lg:rounded-2xl font-black text-sm lg:text-base uppercase tracking-widest hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all flex items-center justify-center gap-3"
                     >
-                      <Play size={24} fill="currentColor"/> Begin Session
+                      <Play size={20} lg:size={24} fill="currentColor"/> Start Timer
                     </button>
                   </div>
                 )}
@@ -337,25 +349,25 @@ const EntityModal: React.FC<EntityModalProps> = ({
             )}
 
             {activeTab === 'features' && (
-              <div className="flex-1 p-12 overflow-y-auto bg-gray-50/30">
-                <div className="max-w-2xl mx-auto space-y-8">
+              <div className="flex-1 p-4 lg:p-12 overflow-y-auto bg-gray-50/30 pb-20 lg:pb-12">
+                <div className="max-w-2xl mx-auto space-y-6 lg:space-y-8">
                   <div className="border-b pb-4 flex items-center gap-3">
-                    <Settings2 className="text-indigo-600" size={32} />
+                    <Settings2 className="text-indigo-600" size={24} lg:size={32} />
                     <div>
-                      <h3 className="text-3xl font-black text-slate-900">Room Features</h3>
-                      <p className="text-slate-500 font-medium">Configure hardware and ambiance for this VIP room.</p>
+                      <h3 className="text-xl lg:text-3xl font-black text-slate-900 uppercase">Hardware</h3>
+                      <p className="text-[10px] lg:text-sm text-slate-500 font-black uppercase tracking-widest">VIP Equipment Setup</p>
                     </div>
                   </div>
 
-                  <div className="grid gap-6">
-                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Karaoke Machine Quality</label>
-                      <div className="grid grid-cols-3 gap-3">
+                  <div className="grid gap-4 lg:gap-6">
+                    <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-3xl border shadow-sm space-y-3 lg:space-y-4">
+                      <label className="block text-[10px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Karaoke System</label>
+                      <div className="grid grid-cols-3 gap-2 lg:gap-3">
                         {['Standard', 'Premium', 'Platinum'].map((v) => (
                           <button 
                             key={v}
-                            onClick={() => updateFeature('karaokeMachine', v)}
-                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.karaokeMachine === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                            onClick={() => updateFeature('karaokeMachine', v as any)}
+                            className={`py-3 lg:py-4 rounded-xl lg:rounded-2xl font-black text-[9px] lg:text-xs uppercase border-2 transition-all ${entity.features?.karaokeMachine === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
                           >
                             {v}
                           </button>
@@ -363,14 +375,14 @@ const EntityModal: React.FC<EntityModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Sound System Type</label>
-                      <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-3xl border shadow-sm space-y-3 lg:space-y-4">
+                      <label className="block text-[10px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Sound Engineering</label>
+                      <div className="grid grid-cols-3 gap-2 lg:gap-3">
                         {['Stereo', 'Surround 5.1', 'Hi-Fi Pro'].map((v) => (
                           <button 
                             key={v}
-                            onClick={() => updateFeature('soundSystem', v)}
-                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.soundSystem === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                            onClick={() => updateFeature('soundSystem', v as any)}
+                            className={`py-3 lg:py-4 rounded-xl lg:rounded-2xl font-black text-[9px] lg:text-xs uppercase border-2 transition-all ${entity.features?.soundSystem === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
                           >
                             {v}
                           </button>
@@ -378,14 +390,14 @@ const EntityModal: React.FC<EntityModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                      <label className="block text-sm font-black text-slate-500 uppercase tracking-widest">Lighting Options</label>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white p-4 lg:p-6 rounded-2xl lg:rounded-3xl border shadow-sm space-y-3 lg:space-y-4">
+                      <label className="block text-[10px] lg:text-xs font-black text-slate-400 uppercase tracking-widest">Ambiance Lighting</label>
+                      <div className="grid grid-cols-2 gap-2 lg:gap-3">
                         {['Standard', 'Disco', 'Mood', 'Custom RGB'].map((v) => (
                           <button 
                             key={v}
-                            onClick={() => updateFeature('lighting', v)}
-                            className={`py-4 rounded-2xl font-bold border-2 transition-all ${entity.features?.lighting === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
+                            onClick={() => updateFeature('lighting', v as any)}
+                            className={`py-3 lg:py-4 rounded-xl lg:rounded-2xl font-black text-[9px] lg:text-xs uppercase border-2 transition-all ${entity.features?.lighting === v ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}
                           >
                             {v}
                           </button>
@@ -400,82 +412,84 @@ const EntityModal: React.FC<EntityModalProps> = ({
             {activeTab === 'billing' && (
               <div className="flex-1 flex bg-gray-50/30 overflow-hidden">
                 {checkoutStep === 'review' ? (
-                  <div className="flex-1 p-12 overflow-y-auto">
-                    <div className="max-w-2xl mx-auto space-y-8">
-                      <div className="border-b-2 border-slate-200 pb-6 flex justify-between items-end">
+                  <div className="flex-1 p-4 lg:p-12 overflow-y-auto pb-20 lg:pb-12">
+                    <div className="max-w-2xl mx-auto space-y-6 lg:space-y-8">
+                      <div className="border-b-2 border-slate-200 pb-4 lg:pb-6 flex justify-between items-end">
                         <div>
-                          <h3 className="text-4xl font-black text-slate-900 tracking-tight">Bill Summary</h3>
-                          <p className="text-slate-500 mt-1 font-medium">Table: {entity.name} • {new Date().toLocaleDateString()}</p>
+                          <h3 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight uppercase">Checkout</h3>
+                          <p className="text-[10px] lg:text-sm text-slate-500 mt-1 font-black uppercase tracking-widest">{entity.name} • {new Date().toLocaleDateString()}</p>
                         </div>
-                        <ReceiptText size={40} className="text-slate-300" />
+                        <ReceiptText size={28} lg:size={40} className="text-slate-300" />
                       </div>
 
-                      <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 space-y-6">
-                        <div className="space-y-4 max-h-64 overflow-y-auto pr-4">
+                      <div className="bg-white p-4 lg:p-8 rounded-2xl lg:rounded-3xl shadow-sm border border-slate-200 space-y-4 lg:space-y-6">
+                        <div className="space-y-3 lg:space-y-4 max-h-48 lg:max-h-64 overflow-y-auto pr-2">
                            {localItems.map(item => (
                              <div key={item.id} className="flex justify-between items-center text-slate-700">
-                               <span className="flex items-center gap-2">
-                                 <span className="font-bold text-indigo-600">x{item.quantity}</span>
-                                 {item.name}
+                               <span className="flex items-center gap-2 text-[11px] lg:text-sm">
+                                 <span className="font-black text-indigo-600">x{item.quantity}</span>
+                                 <span className="font-bold">{item.name}</span>
                                </span>
-                               <span className="font-medium font-mono">₱{(item.price * item.quantity).toLocaleString()}</span>
+                               <span className="font-black font-mono text-[11px] lg:text-sm">₱{(item.price * item.quantity).toLocaleString()}</span>
                              </div>
                            ))}
                            {currentSession && (
-                             <div className="flex justify-between items-center text-indigo-600 font-bold border-t pt-4 border-dashed">
-                               <span>KTV Room Rental ({Math.ceil((Date.now() - currentSession.startTime) / 3600000)} hr)</span>
+                             <div className="flex justify-between items-center text-indigo-600 font-black border-t pt-3 lg:pt-4 border-dashed text-[11px] lg:text-sm uppercase tracking-tight">
+                               <span>KTV Rental ({Math.ceil((Date.now() - currentSession.startTime) / 3600000)}h)</span>
                                <span className="font-mono">₱{roomCost().toLocaleString()}</span>
                              </div>
                            )}
                         </div>
 
-                        <div className="border-t-2 pt-6 space-y-3">
-                          <div className="flex justify-between text-slate-500 font-medium">
+                        <div className="border-t-2 pt-4 lg:pt-6 space-y-2 lg:space-y-3">
+                          <div className="flex justify-between text-slate-500 font-black text-[10px] lg:text-sm uppercase tracking-tighter">
                             <span>Subtotal</span>
                             <span className="font-mono">₱{subtotal.toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between text-slate-500 font-medium">
-                            <span>Service Charge (10%)</span>
+                          <div className="flex justify-between text-slate-500 font-black text-[10px] lg:text-sm uppercase tracking-tighter">
+                            <span>SC (10%)</span>
                             <span className="font-mono">₱{sc.toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between text-slate-500 font-medium pb-2">
+                          <div className="flex justify-between text-slate-500 font-black text-[10px] lg:text-sm uppercase tracking-tighter pb-1 lg:pb-2">
                             <span>VAT (12%)</span>
                             <span className="font-mono">₱{vat.toLocaleString()}</span>
                           </div>
-                          <div className="flex justify-between text-4xl font-black text-slate-900 border-t pt-4">
-                            <span>Total</span>
+                          <div className="flex justify-between text-2xl lg:text-4xl font-black text-slate-900 border-t pt-3 lg:pt-4">
+                            <span className="uppercase tracking-tighter">Total</span>
                             <span className="text-indigo-600 font-mono">₱{total.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <button className="py-5 border-2 border-slate-200 bg-white rounded-2xl font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex flex-col items-center gap-1">
-                          <span className="text-xl">💵 Cash</span>
+                      <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                        <button className="py-4 lg:py-5 border-2 border-slate-200 bg-white rounded-xl lg:rounded-2xl font-black text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex flex-col items-center gap-1 uppercase text-[10px] lg:text-xs">
+                          <span className="text-lg lg:text-xl">💵</span>
+                          Cash
                         </button>
-                        <button className="py-5 border-2 border-slate-200 bg-white rounded-2xl font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex flex-col items-center gap-1">
-                          <span className="text-xl">💳 Card / E-Pay</span>
+                        <button className="py-4 lg:py-5 border-2 border-slate-200 bg-white rounded-xl lg:rounded-2xl font-black text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all flex flex-col items-center gap-1 uppercase text-[10px] lg:text-xs">
+                          <span className="text-lg lg:text-xl">💳</span>
+                          E-Pay
                         </button>
                       </div>
                       
                       <button 
                         onClick={confirmCheckout}
-                        className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-xl hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
+                        className="w-full py-4 lg:py-6 bg-slate-900 text-white rounded-xl lg:rounded-2xl font-black text-sm lg:text-xl uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95"
                       >
-                        Complete & Clear
+                        Finalize Payment
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-12 text-center animate-in fade-in zoom-in duration-300">
-                    <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-                      <CheckCircle2 size={64}/>
+                  <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 text-center animate-in fade-in zoom-in duration-300">
+                    <div className="w-20 h-20 lg:w-24 lg:h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 lg:mb-6">
+                      <CheckCircle2 size={48} lg:size={64}/>
                     </div>
-                    <h3 className="text-4xl font-black text-slate-900">Payment Successful</h3>
-                    <p className="text-slate-500 mt-4 max-w-xs text-lg font-medium">Table has been cleared. Receipt has been printed and sent to server.</p>
-                    <div className="mt-10 flex gap-4">
-                       <button onClick={onClose} className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200">Return to Floor</button>
-                       <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100">Print Receipt</button>
+                    <h3 className="text-2xl lg:text-4xl font-black text-slate-900 uppercase">Paid & Cleared</h3>
+                    <p className="text-slate-500 mt-2 lg:mt-4 max-w-xs text-xs lg:text-lg font-black uppercase tracking-widest leading-tight">Entity updated to cleaning status.</p>
+                    <div className="mt-8 lg:mt-10 flex flex-col sm:flex-row gap-3 lg:gap-4 w-full sm:w-auto px-6 sm:px-0">
+                       <button onClick={onClose} className="px-8 py-3 lg:py-4 bg-slate-100 text-slate-600 rounded-xl lg:rounded-2xl font-black text-xs uppercase hover:bg-slate-200">Return to Floor</button>
+                       <button className="px-8 py-3 lg:py-4 bg-indigo-600 text-white rounded-xl lg:rounded-2xl font-black text-xs uppercase hover:bg-indigo-700 shadow-lg shadow-indigo-100">Print Receipt</button>
                     </div>
                   </div>
                 )}
